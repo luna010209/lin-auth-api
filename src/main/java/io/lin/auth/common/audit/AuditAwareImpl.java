@@ -1,4 +1,4 @@
-package io.lin.auth.config.jpa;
+package io.lin.auth.common.audit;
 
 import io.lin.auth.feature.login.jwt.aUserDetails.CustomUserDetails;
 import org.springframework.data.domain.AuditorAware;
