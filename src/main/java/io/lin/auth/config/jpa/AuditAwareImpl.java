@@ -1,6 +1,6 @@
 package io.lin.auth.config.jpa;
 
-import io.lin.auth.config.jwt.aUserDetails.CustomUserDetails;
+import io.lin.auth.feature.auth.jwt.aUserDetails.CustomUserDetails;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,7 +21,7 @@ public class AuditAwareImpl implements AuditorAware<Long> {
             return Optional.of(userDetails.getUser().getId());
         }
 
-        return Optional.of(0L);
+        return Optional.empty();
     }
 
 }

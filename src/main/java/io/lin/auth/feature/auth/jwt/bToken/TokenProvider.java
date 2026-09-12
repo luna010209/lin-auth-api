@@ -1,4 +1,4 @@
-package io.lin.auth.config.jwt.bToken;
+package io.lin.auth.feature.auth.jwt.bToken;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -6,9 +6,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.WeakKeyException;
-import io.lin.auth.config.jwt.JwtProperties;
-import io.lin.auth.config.jwt.aUserDetails.CustomUserDetails;
-import io.lin.auth.config.jwt.aUserDetails.CustomUserDetailsService;
+import io.lin.auth.feature.auth.jwt.JwtProperties;
+import io.lin.auth.feature.auth.jwt.aUserDetails.CustomUserDetails;
+import io.lin.auth.feature.auth.jwt.aUserDetails.CustomUserDetailsService;
 import io.lin.auth.feature.auth.entity.Auth;
 import io.lin.auth.exception.CustomException;
 import org.slf4j.Logger;

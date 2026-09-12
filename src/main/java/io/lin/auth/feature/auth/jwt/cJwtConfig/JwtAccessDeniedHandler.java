@@ -1,4 +1,4 @@
-package io.lin.auth.config.jwt.cJwtConfig;
+package io.lin.auth.feature.auth.jwt.cJwtConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;

@@ -1,8 +1,8 @@
 package io.lin.auth.feature.auth.service.login;
 
-import io.lin.auth.config.jwt.JwtProperties;
-import io.lin.auth.config.jwt.aUserDetails.CustomUserDetails;
-import io.lin.auth.config.jwt.bToken.TokenProvider;
+import io.lin.auth.feature.auth.jwt.JwtProperties;
+import io.lin.auth.feature.auth.jwt.aUserDetails.CustomUserDetails;
+import io.lin.auth.feature.auth.jwt.bToken.TokenProvider;
 import io.lin.auth.feature.auth.dto.login.LoginRequest;
 import io.lin.auth.feature.auth.dto.login.LoginResponse;
 import io.lin.auth.feature.auth.entity.Auth;

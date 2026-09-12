@@ -64,3 +64,11 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.named('bootRun') {
+	mainClass = 'io.lin.auth.LinAuthApiApplication'
+}
+
+tasks.named('bootJar') {
+	mainClass = 'io.lin.auth.LinAuthApiApplication'
+}

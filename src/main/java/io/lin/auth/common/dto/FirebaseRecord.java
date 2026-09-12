@@ -1,4 +1,4 @@
-package io.lin.auth.config.firebase.dto;
+package io.lin.auth.common.dto;
 
 public record FirebaseRecord(
         String uid,

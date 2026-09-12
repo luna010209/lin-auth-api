@@ -1,4 +1,4 @@
-package io.lin.auth.config.jwt;
+package io.lin.auth.feature.auth.jwt;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

@@ -2,10 +2,10 @@ package io.lin.auth.config.security;
 
 import io.lin.auth.config.firebase.FirebaseAuthFilter;
 import io.lin.auth.config.firebase.FirebaseTokenVerifier;
-import io.lin.auth.config.jwt.bToken.TokenProvider;
-import io.lin.auth.config.jwt.cJwtConfig.JwtAccessDeniedHandler;
-import io.lin.auth.config.jwt.cJwtConfig.JwtAuthenticationEntryPoint;
-import io.lin.auth.config.jwt.cJwtConfig.JwtFilter;
+import io.lin.auth.feature.auth.jwt.bToken.TokenProvider;
+import io.lin.auth.feature.auth.jwt.cJwtConfig.JwtAccessDeniedHandler;
+import io.lin.auth.feature.auth.jwt.cJwtConfig.JwtAuthenticationEntryPoint;
+import io.lin.auth.feature.auth.jwt.cJwtConfig.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

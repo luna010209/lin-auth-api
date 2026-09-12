@@ -1,6 +1,6 @@
 package io.lin.auth.feature.auth.service;
 
-import io.lin.auth.feature.file.dto.FileInfo;
+import io.lin.auth.common.dto.FileInfo;
 import io.lin.auth.feature.auth.dto.ChangeInfoRequest;
 import io.lin.auth.feature.auth.dto.ChangePasswordRequest;
 import io.lin.auth.feature.auth.dto.UserInfo;

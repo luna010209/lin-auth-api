@@ -127,6 +127,8 @@ public class AppService {
                 .build();
 
         authRepo.save(user);
+        user.ensureSelfCreatedBy();
+        authRepo.save(user);
 
         emailVerificationRepo.delete(verification);
         return new AppLoginResponse(

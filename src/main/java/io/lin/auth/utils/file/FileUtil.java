@@ -1,6 +1,6 @@
 package io.lin.auth.utils.file;
 
-import io.lin.auth.feature.file.dto.FileInfo;
+import io.lin.auth.common.dto.FileInfo;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.web.multipart.MultipartFile;
 

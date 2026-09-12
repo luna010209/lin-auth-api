@@ -1,18 +1,13 @@
 package io.lin.auth.feature.auth.entity;
 
-import io.lin.auth.config.jpa.audit.UserAuditable;
+import io.lin.auth.common.audit.UserAuditable;
 import io.lin.auth.feature.auth.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -58,5 +53,9 @@ public class Auth extends UserAuditable {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private final Set<Role> roles = new HashSet<>();
+
+    public void ensureSelfCreatedBy() {
+        assignCreatedByIfAbsent(id);
+    }
 
 }

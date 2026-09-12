@@ -1,6 +1,6 @@
-package io.lin.auth.config.jwt.cJwtConfig;
+package io.lin.auth.feature.auth.jwt.cJwtConfig;
 
-import io.lin.auth.config.jwt.bToken.TokenProvider;
+import io.lin.auth.feature.auth.jwt.bToken.TokenProvider;
 import io.lin.auth.exception.CustomException;
 import io.lin.auth.feature.auth.TokenUtil;
 import jakarta.servlet.FilterChain;

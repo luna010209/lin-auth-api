@@ -45,7 +45,6 @@ public class SignUpService {
                 .orElseGet(() -> EmailVerification.builder()
                         .email(finalEmail)
                         .verified(false)
-                        .createdAt(LocalDateTime.now())
                         .build());
 
         verification.setVerifiedCode(String.valueOf(code));
@@ -115,6 +114,8 @@ public class SignUpService {
                 .phone(request.phone())
                 .build();
 
+        authRepo.save(user);
+        user.ensureSelfCreatedBy();
         authRepo.save(user);
 
         emailVerificationRepo.delete(verification);

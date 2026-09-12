@@ -1,4 +1,4 @@
-package io.lin.auth.config.jwt.aUserDetails;
+package io.lin.auth.feature.auth.jwt.aUserDetails;
 
 import io.lin.auth.feature.auth.entity.Auth;
 import org.springframework.security.core.GrantedAuthority;

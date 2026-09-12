@@ -1,4 +1,4 @@
-package io.lin.auth.feature.file.dto;
+package io.lin.auth.common.dto;
 
 public record FileInfo(
         byte[] fileByte,
