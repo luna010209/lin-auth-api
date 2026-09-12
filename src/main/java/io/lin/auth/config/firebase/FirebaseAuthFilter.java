@@ -1,6 +1,6 @@
 package io.lin.auth.config.firebase;
 
-import io.lin.auth.feature.auth.TokenUtil;
+import io.lin.auth.feature.login.jwt.TokenUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

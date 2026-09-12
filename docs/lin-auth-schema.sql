@@ -15,7 +15,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- ---------------------------------------------------------------------------
 -- auth — user accounts
--- Entity: io.lin.auth.feature.auth.entity.Auth
+-- Entity: io.lin.auth.feature.account.entity.Auth
 -- Extends: UserAuditable (created_by, created_at, updated_by, updated_at)
 -- ---------------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS auth_roles (
 
 -- ---------------------------------------------------------------------------
 -- email_verification — email verification codes (sign-up / email change)
--- Entity: io.lin.auth.feature.auth.entity.EmailVerification
+-- Entity: io.lin.auth.feature.emailverification.entity.EmailVerification
 -- Code expires in 15 minutes (application logic)
 -- ---------------------------------------------------------------------------
 

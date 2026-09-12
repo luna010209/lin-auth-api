@@ -1,6 +1,6 @@
 package io.lin.auth;
 
-import io.lin.auth.feature.auth.jwt.JwtProperties;
+import io.lin.auth.feature.login.jwt.JwtProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
