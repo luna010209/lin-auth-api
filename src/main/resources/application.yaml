@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: lin-auth-api
+
+  profiles:
+    active: local

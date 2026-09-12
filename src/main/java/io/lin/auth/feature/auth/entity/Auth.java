@@ -1,0 +1,62 @@
+package io.lin.auth.feature.auth.entity;
+
+import io.lin.auth.config.jpa.audit.UserAuditable;
+import io.lin.auth.feature.auth.enums.Role;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@ToString
+@Table(name = "auth")
+public class Auth extends UserAuditable {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(length = 25)
+    private String phone;
+
+    @Column(name = "display_name", length = 150)
+    private String displayName;
+    
+    @Setter
+    private String avatar;
+
+    @Column(name = "firebase_uid", unique = true)
+    private String uid;
+
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "auth_roles", joinColumns = @JoinColumn(name = "auth_id"))
+    @Column(name = "roles")
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private final Set<Role> roles = new HashSet<>();
+
+}

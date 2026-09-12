@@ -1,0 +1,86 @@
+spring:
+  application:
+    name: lin-auth-api
+
+  config:
+    activate:
+      on-profile: local
+    import: optional:file:.env.${spring.profiles.active}[.properties]
+
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 30MB
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+
+  jpa:
+    database: mysql
+    generate-ddl: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL}
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  secret-key: local-admin-authenticate-secret-key
+  expiration-minutes: 1200
+  refresh-expiration-minutes: 10080
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+    operationsSorter: method
+    tagsSorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  writer-with-default-pretty-printer: true
+  default-produces-media-type: application/json;charset=UTF-8
+
+cloudflare:
+  r2:
+    endpoint: https://d575c529d9a508f6a8f706796937758b.r2.cloudflarestorage.com
+    access-key: ${R2_ACCESS_KEY}
+    secret-key: ${R2_SECRET_KEY}
+    bucket: lin-universe
+
+app:
+  cdn:
+    url: ${R2_STORAGE_DOMAIN}
+  billing:
+    timezone: Asia/Seoul
+
+firebase:
+  json: ${FIREBASE_JSON}
+  project: ${PROJECT_ID}
+
+server:
+  port: 8081
+  tomcat:
+    max-part-count: 50
