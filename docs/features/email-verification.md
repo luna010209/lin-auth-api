@@ -23,7 +23,15 @@ POST /auth/email-verification/send-mail?email=user@example.com
 
 ### Response
 
-**200 OK** — empty body
+**200 OK**
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "Request processed successfully."
+}
+```
 
 Also sends an HTML email containing the 6-digit code.
 
@@ -58,7 +66,15 @@ Confirms the code sent to the email. After success, the email can be used for si
 
 ### Response
 
-**200 OK** — empty body
+**200 OK**
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "Request processed successfully."
+}
+```
 
 ### Errors
 

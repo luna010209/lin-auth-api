@@ -41,15 +41,20 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+  "success": true,
+  "code": 200,
+  "message": "Request processed successfully.",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+  }
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `accessToken` | string | JWT for API calls |
-| `refreshToken` | string | JWT for token refresh (if implemented client-side) |
+| `data.accessToken` | string | JWT for API calls |
+| `data.refreshToken` | string | JWT for token refresh (if implemented client-side) |
 
 Side effect: updates `last_login` on the user row.
 

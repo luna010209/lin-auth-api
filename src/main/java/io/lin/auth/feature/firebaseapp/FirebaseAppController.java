@@ -1,5 +1,6 @@
 package io.lin.auth.feature.firebaseapp;
 
+import io.lin.auth.common.dto.ApiResponse;
 import io.lin.auth.feature.firebaseapp.dto.AppConfirmRequest;
 import io.lin.auth.feature.firebaseapp.dto.AppLoginRequest;
 import io.lin.auth.feature.firebaseapp.dto.AppLoginResponse;
@@ -40,10 +41,10 @@ public class FirebaseAppController {
                         - It is recommended to replace client-provided uid/email with Firebase ID Token verification in the future.
                     """
     )
-    public ResponseEntity<AppLoginResponse> appLogin(
+    public ResponseEntity<ApiResponse<AppLoginResponse>> appLogin(
             @Valid @RequestBody AppLoginRequest request
     ) {
-        return ResponseEntity.ok(firebaseAppService.appLogin(request));
+        return ResponseEntity.ok(ApiResponse.ok(firebaseAppService.appLogin(request)));
     }
 
     @PostMapping("confirm")
@@ -62,10 +63,10 @@ public class FirebaseAppController {
                         3) After linking, the user can log in directly using firebaseUid
                     """
     )
-    public ResponseEntity<AppLoginResponse> confirmUser(
+    public ResponseEntity<ApiResponse<AppLoginResponse>> confirmUser(
             @Valid @RequestBody AppConfirmRequest request
     ) {
-        return ResponseEntity.ok(firebaseAppService.confirmUser(request));
+        return ResponseEntity.ok(ApiResponse.ok(firebaseAppService.confirmUser(request)));
     }
 
     @PostMapping("register")
@@ -89,10 +90,10 @@ public class FirebaseAppController {
                           or treat emails from Google login as already verified.
                     """
     )
-    public ResponseEntity<AppLoginResponse> register(
+    public ResponseEntity<ApiResponse<AppLoginResponse>> register(
             @Valid @RequestBody AppRegisterRequest request
     ) {
-        return ResponseEntity.ok(firebaseAppService.newAccount(request));
+        return ResponseEntity.ok(ApiResponse.ok(firebaseAppService.newAccount(request)));
     }
 
     @PostMapping("verify-email")
@@ -115,12 +116,12 @@ public class FirebaseAppController {
                         - It can replace the standard email verification code process for regular email registration.
                     """
     )
-    public ResponseEntity<Void> verifyEmail(
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(
             @NotBlank(message = "valid.email")
             @Email(message = "valid.email_format")
             @RequestParam("email") String email
     ) {
         firebaseAppService.verifyEmail(email);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 }

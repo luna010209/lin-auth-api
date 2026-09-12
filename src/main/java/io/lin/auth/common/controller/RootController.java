@@ -1,5 +1,6 @@
 package io.lin.auth.common.controller;
 
+import io.lin.auth.common.dto.ApiResponse;
 import io.micrometer.common.util.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,7 +37,7 @@ public class RootController {
 
     @Operation(summary = "Root API", description = "Basic service information")
     @GetMapping("/")
-    public ResponseEntity<Map<String, Object>> root() {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> root() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "UP");
         response.put("service", applicationName);
@@ -44,13 +45,13 @@ public class RootController {
         response.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         response.put("message", "Lin Auth API runs well");
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
 
     @Operation(summary = "Health Check", description = "Confirm status of system")
     @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> health() {
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "UP");
@@ -64,7 +65,7 @@ public class RootController {
         checks.put("disk", "UP");
         response.put("checks", checks);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
 
@@ -78,7 +79,7 @@ public class RootController {
                 """
     )
     @GetMapping("/region")
-    public ResponseEntity<Map<String, String>> getRegionLang(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> getRegionLang(HttpServletRequest request) {
         Map<String, String> response = new HashMap<>();
 
         String ip = getClientIp(request);
@@ -113,7 +114,7 @@ public class RootController {
         response.put("language", lang);
         response.put("timeZone", timeZone);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     public String getClientIp(HttpServletRequest request) {

@@ -1,5 +1,6 @@
 package io.lin.auth.feature.login;
 
+import io.lin.auth.common.dto.ApiResponse;
 import io.lin.auth.feature.login.dto.LoginRequest;
 import io.lin.auth.feature.login.dto.LoginResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,13 +28,13 @@ public class LoginController {
             summary = "Login",
             description = "After authentication, JWT Access Token and Refresh Token are issued."
     )
-    public ResponseEntity<LoginResponse> login(
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletResponse response
     ) {
         LoginResponse loginResponse = loginService.authenticate(loginRequest);
         response.setHeader(AUTHORIZATION, "Bearer " + loginResponse.accessToken());
-        return ResponseEntity.ok(loginResponse);
+        return ResponseEntity.ok(ApiResponse.ok(loginResponse));
     }
 
     @PostMapping("/find-username")
@@ -54,14 +55,14 @@ public class LoginController {
                       to prevent user enumeration attacks.
                     """
     )
-    public ResponseEntity<String> findUsername(
+    public ResponseEntity<ApiResponse<Void>> findUsername(
             @NotBlank(message = "valid.email")
             @Email(message = "valid.email_format")
             @RequestParam("email")
             String email
     ) {
         loginService.findUsername(email);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 
     @PostMapping("/find-password")
@@ -86,13 +87,13 @@ public class LoginController {
                       using a password reset link (token-based approach) is more secure.
                     """
     )
-    public ResponseEntity<String> findPassword(
+    public ResponseEntity<ApiResponse<Void>> findPassword(
             @NotBlank(message = "valid.email")
             @Email(message = "valid.email_format")
             @RequestParam("email")
             String email
     ) {
         loginService.findPassword(email);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 }

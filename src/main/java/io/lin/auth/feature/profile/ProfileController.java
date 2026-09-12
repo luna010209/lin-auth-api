@@ -1,5 +1,6 @@
 package io.lin.auth.feature.profile;
 
+import io.lin.auth.common.dto.ApiResponse;
 import io.lin.auth.feature.account.dto.ChangeInfoRequest;
 import io.lin.auth.feature.account.dto.ChangePasswordRequest;
 import io.lin.auth.feature.account.dto.UserInfo;
@@ -24,8 +25,8 @@ public class ProfileController {
             summary = "Confirm login user information",
             description = "Get user information"
     )
-    public UserInfo currentUser() {
-        return profileService.userLogin();
+    public ResponseEntity<ApiResponse<UserInfo>> currentUser() {
+        return ResponseEntity.ok(ApiResponse.ok(profileService.userLogin()));
     }
 
     @PutMapping
@@ -39,11 +40,11 @@ public class ProfileController {
                         - email (new email should be verified first)
                     """
     )
-    public ResponseEntity<Void> changeInfo(
+    public ResponseEntity<ApiResponse<Void>> changeInfo(
             @Valid @RequestBody ChangeInfoRequest request
     ) {
         profileService.changeInfo(request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 
     @PutMapping("/change-password")
@@ -59,11 +60,11 @@ public class ProfileController {
                     - If validation passes, encrypt the newPassword (e.g., using BCrypt) and save it
                     """
     )
-    public ResponseEntity<Void> changePassword(
+    public ResponseEntity<ApiResponse<Void>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request
     ) {
         profileService.changePassword(request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 
     @PutMapping(value = "/avatar", consumes = "multipart/form-data")
@@ -76,10 +77,10 @@ public class ProfileController {
                     - The existing image will be overwritten at the same path.
                     """
     )
-    public ResponseEntity<Void> changeAvatar(
+    public ResponseEntity<ApiResponse<Void>> changeAvatar(
             @RequestParam("avatar") MultipartFile avatar
     ) {
         profileService.changeAvatar(avatar);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 }

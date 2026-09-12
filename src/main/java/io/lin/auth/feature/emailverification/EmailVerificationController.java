@@ -1,5 +1,6 @@
 package io.lin.auth.feature.emailverification;
 
+import io.lin.auth.common.dto.ApiResponse;
 import io.lin.auth.feature.emailverification.dto.EmailVerificationRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,14 +27,14 @@ public class EmailVerificationController {
                     This verified code is valid in 15 minutes.
                     """
     )
-    public ResponseEntity<Void> sendMail(
+    public ResponseEntity<ApiResponse<Void>> sendMail(
             @NotBlank(message = "valid.email")
             @Email(message = "valid.email_format")
             @RequestParam("email")
             String email
     ) {
         emailVerificationService.sendMail(email);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 
     @PostMapping("/verify")
@@ -44,10 +45,10 @@ public class EmailVerificationController {
                     Then this email can be used to sign up later.
                     """
     )
-    public ResponseEntity<Void> verifyEmail(
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(
             @Valid @RequestBody EmailVerificationRequest request
     ) {
         emailVerificationService.verifyEmail(request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 }

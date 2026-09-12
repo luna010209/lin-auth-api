@@ -1,5 +1,6 @@
 package io.lin.auth.feature.signup;
 
+import io.lin.auth.common.dto.ApiResponse;
 import io.lin.auth.feature.signup.dto.SignUpRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,10 +25,10 @@ public class SignUpController {
                     - username, password, verified email, phone, display name
                     """
     )
-    public ResponseEntity<Void> signUp(
+    public ResponseEntity<ApiResponse<Void>> signUp(
             @Valid @RequestBody SignUpRequest request
     ) {
         signUpService.signUp(request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.okVoid());
     }
 }

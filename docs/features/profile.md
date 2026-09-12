@@ -22,20 +22,25 @@ Authorization: Bearer {accessToken}
 
 ### Response
 
-**200 OK** — [UserInfo](./account.md#userinfo)
+**200 OK** — `data` contains [UserInfo](./account.md#userinfo)
 
 ```json
 {
-  "id": 1,
-  "username": "luna",
-  "displayName": "Luna",
-  "email": "user@example.com",
-  "phone": "01012345678",
-  "uid": null,
-  "avatar": "https://cdn.example.com/profiles/1/avatar.jpg",
-  "lastLogin": "2026-09-12T10:30:00",
-  "createdAt": "2026-09-12T09:00:00",
-  "roles": ["ROLE_TEACHER"]
+  "success": true,
+  "code": 200,
+  "message": "Request processed successfully.",
+  "data": {
+    "id": 1,
+    "username": "luna",
+    "displayName": "Luna",
+    "email": "user@example.com",
+    "phone": "01012345678",
+    "uid": null,
+    "avatar": "https://cdn.example.com/profiles/1/avatar.jpg",
+    "lastLogin": "2026-09-12T10:30:00",
+    "createdAt": "2026-09-12T09:00:00",
+    "roles": ["ROLE_TEACHER"]
+  }
 }
 ```
 

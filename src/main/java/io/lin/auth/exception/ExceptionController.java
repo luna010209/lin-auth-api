@@ -1,5 +1,6 @@
 package io.lin.auth.exception;
 
+import io.lin.auth.common.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -11,8 +12,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -24,7 +23,7 @@ public class ExceptionController {
     private final MessageSource messageSource;
 
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<Map<String, Object>> handleException(CustomException e, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> handleException(CustomException e, HttpServletRequest request) {
 
         String message = messageSource.getMessage(
                 e.getMessageCode(),
@@ -33,18 +32,16 @@ public class ExceptionController {
                 LocaleContextHolder.getLocale()
         );
 
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("timestamp", LocalDateTime.now(ZoneOffset.UTC));
-        errorResponse.put("status", e.getStatus().value());
-        errorResponse.put("error", e.getStatus().name());
-        errorResponse.put("message", message);
-        errorResponse.put("path", request.getRequestURI());
+        Map<String, Object> errorDetail = new HashMap<>();
+        errorDetail.put("path", request.getRequestURI());
 
-        return ResponseEntity.status(e.getStatus()).body(errorResponse);
+        return ResponseEntity
+                .status(e.getStatus())
+                .body(ApiResponse.fail(e.getStatus().value(), message, errorDetail));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(
+    public ResponseEntity<ApiResponse<Void>> handleValidationExceptions(
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
@@ -70,14 +67,12 @@ public class ExceptionController {
                 LocaleContextHolder.getLocale()
         );
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now(ZoneOffset.UTC));
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", HttpStatus.BAD_REQUEST.name());
-        body.put("message", message);
-        body.put("path", request.getRequestURI());
-        body.put("fields", fields);
+        Map<String, Object> errorDetail = new HashMap<>();
+        errorDetail.put("path", request.getRequestURI());
+        errorDetail.put("fields", fields);
 
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.fail(HttpStatus.BAD_REQUEST.value(), message, errorDetail));
     }
 }
