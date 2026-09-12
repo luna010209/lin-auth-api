@@ -11,7 +11,6 @@ import io.lin.auth.exception.CustomException;
 import io.lin.auth.feature.account.repo.AuthRepo;
 import io.lin.auth.feature.emailverification.repo.EmailVerificationRepo;
 import io.lin.auth.storage.R2Storage;
-import io.lin.auth.feature.account.UserUtil;
 import io.lin.auth.utils.file.FileUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,25 +30,20 @@ public class ProfileService {
     private final EmailVerificationRepo emailVerificationRepo;
 
     private final PasswordEncoder encoder;
-    private final UserUtil userUtil;
 
     private final R2Storage r2Storage;
 
-    @Transactional
-    public UserInfo userLogin() {
-        Auth user = userUtil.currentUser();
-        if (user == null) throw new CustomException(HttpStatus.UNAUTHORIZED, "error.auth.login_required");
+    @Transactional(readOnly = true)
+    public UserInfo getProfile(Auth principal) {
+        Auth user = requireUser(principal);
         String avatar = user.getAvatar() != null ?
                 r2Storage.publicUrl(user.getAvatar()) : null;
         return UserInfo.fromEntity(user, avatar);
     }
 
-
     @Transactional
-    public void changeInfo(ChangeInfoRequest request) {
-        Auth user = userUtil.currentUser();
-        if (user == null)
-            throw new CustomException(HttpStatus.UNAUTHORIZED, "error.auth.login_required");
+    public void changeInfo(Auth principal, ChangeInfoRequest request) {
+        Auth user = requireUser(principal);
 
         if (!Objects.equals(request.username(), user.getUsername())) {
             if (authRepo.existsByUsername(request.username()))
@@ -81,29 +75,23 @@ public class ProfileService {
         authRepo.save(user);
     }
 
-
     @Transactional
-    public void changePassword(ChangePasswordRequest request) {
-        Auth currentUser = userUtil.currentUser();
-        if (currentUser == null)
-            throw new CustomException(HttpStatus.UNAUTHORIZED, "error.auth.login_required");
+    public void changePassword(Auth principal, ChangePasswordRequest request) {
+        Auth user = requireUser(principal);
 
-        if (!encoder.matches(request.currentPassword(), currentUser.getPassword()))
+        if (!encoder.matches(request.currentPassword(), user.getPassword()))
             throw new CustomException(HttpStatus.CONFLICT, "error.auth.current_password_invalid");
 
         if (!Objects.equals(request.newPassword(), request.cfPassword()))
             throw new CustomException(HttpStatus.CONFLICT, "error.auth.password.mismatch");
 
-        currentUser.setPassword(encoder.encode(request.newPassword()));
-        authRepo.save(currentUser);
+        user.setPassword(encoder.encode(request.newPassword()));
+        authRepo.save(user);
     }
 
-
     @Transactional
-    public void changeAvatar(MultipartFile avatar) {
-        Auth currentUser = userUtil.currentUser();
-        if (currentUser == null)
-            throw new CustomException(HttpStatus.UNAUTHORIZED, "error.auth.login_required");
+    public void changeAvatar(Auth principal, MultipartFile avatar) {
+        Auth user = requireUser(principal);
 
         if (avatar.getSize() > 2 * 1024 * 1024) {
             throw new CustomException(HttpStatus.BAD_REQUEST, "error.file.too_large", 2);
@@ -114,7 +102,7 @@ public class ProfileService {
             throw new CustomException(HttpStatus.BAD_REQUEST, "error.image.invalid_type");
         }
 
-        String avatarKey = "profiles/" + currentUser.getId() + "/avatar.jpg";
+        String avatarKey = "profiles/" + user.getId() + "/avatar.jpg";
 
         try {
             FileInfo avatarInfo = FileUtil.processFile(avatar);
@@ -128,13 +116,19 @@ public class ProfileService {
             );
         }
 
-        currentUser.setAvatar(avatarKey);
-        authRepo.save(currentUser);
+        user.setAvatar(avatarKey);
+        authRepo.save(user);
     }
-
 
     public void upgradeRole(String userId, Role newRole) {
 
     }
 
+    private Auth requireUser(Auth principal) {
+        if (principal == null || principal.getId() == null) {
+            throw new CustomException(HttpStatus.UNAUTHORIZED, "error.auth.login_required");
+        }
+        return authRepo.findById(principal.getId())
+                .orElseThrow(() -> new CustomException(HttpStatus.UNAUTHORIZED, "error.auth.login_required"));
+    }
 }

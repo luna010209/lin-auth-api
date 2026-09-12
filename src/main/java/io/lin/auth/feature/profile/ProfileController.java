@@ -4,6 +4,8 @@ import io.lin.auth.common.dto.ApiResponse;
 import io.lin.auth.feature.account.dto.ChangeInfoRequest;
 import io.lin.auth.feature.account.dto.ChangePasswordRequest;
 import io.lin.auth.feature.account.dto.UserInfo;
+import io.lin.auth.feature.account.entity.Auth;
+import io.lin.auth.feature.login.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,8 +27,8 @@ public class ProfileController {
             summary = "Confirm login user information",
             description = "Get user information"
     )
-    public ResponseEntity<ApiResponse<UserInfo>> currentUser() {
-        return ResponseEntity.ok(ApiResponse.ok(profileService.userLogin()));
+    public ResponseEntity<ApiResponse<UserInfo>> currentUser(@CurrentUser Auth user) {
+        return ResponseEntity.ok(ApiResponse.ok(profileService.getProfile(user)));
     }
 
     @PutMapping
@@ -41,9 +43,10 @@ public class ProfileController {
                     """
     )
     public ResponseEntity<ApiResponse<Void>> changeInfo(
+            @CurrentUser Auth user,
             @Valid @RequestBody ChangeInfoRequest request
     ) {
-        profileService.changeInfo(request);
+        profileService.changeInfo(user, request);
         return ResponseEntity.ok(ApiResponse.okVoid());
     }
 
@@ -61,9 +64,10 @@ public class ProfileController {
                     """
     )
     public ResponseEntity<ApiResponse<Void>> changePassword(
+            @CurrentUser Auth user,
             @Valid @RequestBody ChangePasswordRequest request
     ) {
-        profileService.changePassword(request);
+        profileService.changePassword(user, request);
         return ResponseEntity.ok(ApiResponse.okVoid());
     }
 
@@ -78,9 +82,10 @@ public class ProfileController {
                     """
     )
     public ResponseEntity<ApiResponse<Void>> changeAvatar(
+            @CurrentUser Auth user,
             @RequestParam("avatar") MultipartFile avatar
     ) {
-        profileService.changeAvatar(avatar);
+        profileService.changeAvatar(user, avatar);
         return ResponseEntity.ok(ApiResponse.okVoid());
     }
 }
