@@ -1,8 +1,9 @@
 package io.lin.auth.feature.emailverification.entity;
 
-import io.lin.auth.common.audit.TimeAuditable;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -12,8 +13,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @ToString
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "email_verification")
-public class EmailVerification extends TimeAuditable {
+public class EmailVerification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,4 +35,8 @@ public class EmailVerification extends TimeAuditable {
     @Column(name = "is_verified", nullable = false)
     @Setter
     private boolean verified;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

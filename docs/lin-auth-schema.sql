@@ -1,6 +1,6 @@
 -- Lin Auth API — MySQL schema
 -- Target: MySQL 8.x, utf8mb4
--- Matches: src/main/java/io/lin/auth/feature/auth/entity/**
+-- Matches: src/main/java/io/lin/auth/feature/**/entity/**
 -- Date: 2026-09-12
 --
 -- Usage (fresh database):
@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS auth_roles (
 -- ---------------------------------------------------------------------------
 -- email_verification — email verification codes (sign-up / email change)
 -- Entity: io.lin.auth.feature.emailverification.entity.EmailVerification
--- Code expires in 15 minutes (application logic)
+-- created_at only (no UserAuditable / updated_at)
+-- Code expires in 20 minutes (application logic)
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS email_verification (
