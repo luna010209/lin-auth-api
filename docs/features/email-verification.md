@@ -5,6 +5,21 @@ Send and confirm a 6-digit code before web sign-up or app registration (when not
 **Package:** `io.lin.auth.feature.emailverification`  
 **Auth:** Public (no JWT)
 
+## Mail provider (local)
+
+Outbound mail uses **Resend SMTP** via Spring `JavaMailSender` (`application-local.yaml`):
+
+| Setting | Value |
+|---------|--------|
+| Host | `smtp.resend.com` |
+| Port | `587` (STARTTLS) |
+| SMTP username | `resend` |
+| SMTP password | `RESEND_API_KEY` from [Resend API Keys](https://resend.com/api-keys) |
+| From address | `MAIL_FROM` (default `noreply@linuniverse.win`) — must be on a verified Resend domain |
+| Logo image | `LOGO_URL` — public HTTPS URL used in email HTML (`app.mail.logo-url`) |
+
+Copy `.env.local.example` → `.env.local.properties` and set `RESEND_API_KEY`, `LOGO_URL`, and optionally `MAIL_FROM`.
+
 ---
 
 ## POST `/auth/email-verification/send-mail`

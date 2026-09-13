@@ -57,23 +57,27 @@ public class TokenProvider {
         Instant issuedAt = Instant.now();
         Date expirationDate = getExpirationDate(issuedAt, properties.expirationMinutes());
 
-        String authorities = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
+        String authorities = applicationRoleAuthorities(authentication);
         staticLog.info(authentication.getName());
+
+        if (!(authentication.getPrincipal() instanceof CustomUserDetails details)) {
+            throw new IllegalStateException("Cannot issue access token without CustomUserDetails principal");
+        }
+
+        Auth user = details.getUser();
+        if (user.getId() == null) {
+            throw new IllegalStateException("Cannot issue access token without user id");
+        }
 
         var builder = Jwts.builder()
                 .subject(authentication.getName())
                 .issuedAt(Date.from(issuedAt))
                 .claim("auth", authorities)
+                .claim("userId", user.getId())
                 .expiration(expirationDate);
 
-        if (authentication.getPrincipal() instanceof CustomUserDetails details) {
-            Auth user = details.getUser();
-            builder.claim("userId", user.getId());
-            if (user.getDisplayName() != null) {
-                builder.claim("displayName", user.getDisplayName());
-            }
+        if (user.getDisplayName() != null) {
+            builder.claim("displayName", user.getDisplayName());
         }
 
         return builder.signWith(signingKey).compact();
@@ -90,10 +94,7 @@ public class TokenProvider {
         Instant issuedAt = Instant.now();
         Date expirationDate = getExpirationDate(issuedAt, properties.refreshExpirationMinutes());
 
-        String authorities = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
-
+        String authorities = applicationRoleAuthorities(authentication);
 
         return Jwts.builder()
                 .subject(authentication.getName())
@@ -176,5 +177,13 @@ public class TokenProvider {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /** Only application roles go into JWT — exclude Spring Security extras such as FACTOR_PASSWORD. */
+    private static String applicationRoleAuthorities(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(authority -> authority != null && authority.startsWith("ROLE_"))
+                .collect(Collectors.joining(","));
     }
 }

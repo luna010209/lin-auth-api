@@ -7,7 +7,6 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -22,8 +21,11 @@ public class EmailVerifyListenerEvent implements ApplicationListener<EmailVerify
     private final JavaMailSender mailSender;
     private final I18nUtil languageUtil;
 
-    @Value("${spring.mail.username}")
+    @Value("${app.mail.from}")
     private String fromEmail;
+
+    @Value("${app.mail.logo-url}")
+    private String logoUrl;
 
     @Override
     public void onApplicationEvent(EmailVerifyListener event) {
@@ -36,6 +38,7 @@ public class EmailVerifyListenerEvent implements ApplicationListener<EmailVerify
 
             String safeEmail = HtmlUtils.htmlEscape(toEmail);
             String safeCode = HtmlUtils.htmlEscape(code);
+            String safeLogoUrl = HtmlUtils.htmlEscape(logoUrl);
 
             String title = languageUtil.m("mail.content.title");
             String paragraph = languageUtil.m("mail.content.paragraph", safeEmail);
@@ -54,7 +57,7 @@ public class EmailVerifyListenerEvent implements ApplicationListener<EmailVerify
                               <tr>
                                 <td style="padding:0; margin:0; line-height:0; font-size:0; border-bottom: 2px solid #4F46E5;
                                       box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);">
-                                  <img src="cid:logoImage"
+                                  <img src="%s"
                                     alt="Lin Langa Logo"
                                     width="450"
                                     style="display:block; width:100%%; max-width:450px; height:auto; border:0; margin:0; padding:0;" />
@@ -95,17 +98,15 @@ public class EmailVerifyListenerEvent implements ApplicationListener<EmailVerify
                         </tr>
                       </table>
                     </div>
-                    """, title, paragraph, safeCode, note, footer);
+                    """, safeLogoUrl, title, paragraph, safeCode, note, footer);
 
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
 
             helper.setFrom(fromEmail, senderName);
             helper.setTo(toEmail);
             helper.setSubject(subject);
             helper.setText(mailContent, true);
-
-            helper.addInline("logoImage", new ClassPathResource("static/images/logo.png"));
 
             mailSender.send(message);
 

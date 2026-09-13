@@ -4,3 +4,8 @@ spring:
 
   profiles:
     active: local
+
+jwt:
+  secret-key: local-admin-authenticate-secret-key
+  expiration-minutes: 1200
+  refresh-expiration-minutes: 10080
