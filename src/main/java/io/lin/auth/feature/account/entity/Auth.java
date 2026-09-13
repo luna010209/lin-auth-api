@@ -52,7 +52,7 @@ public class Auth extends UserAuditable {
     @Column(name = "roles")
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private final Set<Role> roles = new HashSet<>();
+    private Set<Role> roles = new HashSet<>();
 
     public void ensureSelfCreatedBy() {
         assignCreatedByIfAbsent(id);

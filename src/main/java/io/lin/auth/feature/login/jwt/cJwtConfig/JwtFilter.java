@@ -1,8 +1,8 @@
 package io.lin.auth.feature.login.jwt.cJwtConfig;
 
-import io.lin.auth.feature.login.jwt.bToken.TokenProvider;
 import io.lin.auth.exception.CustomException;
 import io.lin.auth.feature.login.jwt.TokenUtil;
+import io.lin.auth.feature.login.jwt.bToken.TokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,16 +30,17 @@ public class JwtFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+        SecurityContextHolder.clearContext();
+
         String jwt = TokenUtil.resolveToken(request);
         String requestURI = request.getRequestURI();
 
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         if (TokenUtil.isFirebaseToken(jwt)) {
-            filterChain.doFilter(request, response);
+            try {
+                filterChain.doFilter(request, response);
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
             return;
         }
 
@@ -52,14 +53,12 @@ public class JwtFilter extends OncePerRequestFilter {
                             authentication.getName(), requestURI);
                 }
             } catch (CustomException e) {
-
                 if (Objects.equals("error.token.expired", e.getMessageCode())) {
                     response.setHeader(TokenUtil.TOKEN_EXPIRED_HEADER, "true");
                     logger.warn("JWT expired. uri: {}", requestURI);
                 } else {
                     logger.warn("Invalid JWT. uri: {}", requestURI);
                 }
-
             } catch (Exception e) {
                 logger.error("Unexpected JWT processing error. uri: {}", requestURI, e);
             }
@@ -67,6 +66,10 @@ public class JwtFilter extends OncePerRequestFilter {
             logger.debug("No JWT provided. uri: {}", requestURI);
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 }

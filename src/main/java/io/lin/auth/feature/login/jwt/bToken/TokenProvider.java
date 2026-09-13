@@ -123,13 +123,23 @@ public class TokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        Collection<? extends GrantedAuthority> authorities =
-                Arrays.stream(claims.get("auth").toString().split(","))
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+        Collection<? extends GrantedAuthority> authorities = parseAuthorities(claims);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
         return new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+    }
+
+    private static Collection<? extends GrantedAuthority> parseAuthorities(Claims claims) {
+        Object rawAuth = claims.get("auth");
+        if (rawAuth == null) {
+            return List.of();
+        }
+
+        return Arrays.stream(rawAuth.toString().split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toList());
     }
 
 

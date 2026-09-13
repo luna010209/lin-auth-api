@@ -87,6 +87,21 @@ Used by [Profile PUT `/auth/change-password`](./profile.md#put-authchange-passwo
 | `ROLE_TEACHER` | `ROLE_TEACHER` |
 | `ROLE_ADMIN` | `ROLE_ADMIN` |
 
+### Assign roles (SQL)
+
+Roles live in `auth_roles`, not on the `auth` row:
+
+```sql
+INSERT IGNORE INTO auth_roles (auth_id, roles)
+VALUES (1, 'ROLE_ADMIN');
+```
+
+Use the exact enum string (`ROLE_ADMIN`, not `ADMIN`). After inserting or changing roles, **log in again** so the JWT `auth` claim and `GET /auth` → `roles` array are refreshed.
+
+### Entity note
+
+`Auth.roles` is a mutable `Set<Role>` (`@ElementCollection`, eager). Do not use a `final` collection field — Hibernate may fail to load roles and an login `save()` can sync an empty set and delete `auth_roles` rows.
+
 ---
 
 ## JWT (login feature)

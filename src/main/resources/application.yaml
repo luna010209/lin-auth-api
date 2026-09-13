@@ -6,6 +6,6 @@ spring:
     active: local
 
 jwt:
-  secret-key: local-admin-authenticate-secret-key
+  secret-key: ${JWT_SECRET_KEY:local-admin-authenticate-secret-key}
   expiration-minutes: 1200
   refresh-expiration-minutes: 10080
