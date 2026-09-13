@@ -9,6 +9,7 @@ Base URL (local): `http://localhost:8081`
 | Login | [login.md](./login.md) | `/auth/login`, `/auth/find-*` |
 | Firebase app | [firebase-app.md](./firebase-app.md) | `/auth/app` |
 | Profile | [profile.md](./profile.md) | `/auth` (authenticated) |
+| Admin user stats | [admin-users.md](./admin-users.md) | `/auth/admin/users` |
 | Shared types | [account.md](./account.md) | — |
 
 ## Response envelope — `ApiResponse<T>`
