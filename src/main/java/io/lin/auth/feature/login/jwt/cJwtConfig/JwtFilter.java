@@ -30,19 +30,15 @@ public class JwtFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        SecurityContextHolder.clearContext();
-
         String jwt = TokenUtil.resolveToken(request);
         String requestURI = request.getRequestURI();
 
         if (TokenUtil.isFirebaseToken(jwt)) {
-            try {
-                filterChain.doFilter(request, response);
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            filterChain.doFilter(request, response);
             return;
         }
+
+        SecurityContextHolder.clearContext();
 
         if (StringUtils.hasText(jwt)) {
             try {

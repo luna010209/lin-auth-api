@@ -4,20 +4,24 @@ import io.lin.auth.exception.CustomException;
 import io.lin.auth.feature.account.dto.UserInfo;
 import io.lin.auth.feature.account.entity.Auth;
 import io.lin.auth.feature.account.repo.AuthRepo;
-import io.lin.auth.feature.emailverification.EmailVerificationService;
-import io.lin.auth.feature.emailverification.entity.EmailVerification;
-import io.lin.auth.feature.firebaseapp.dto.AppConfirmRequest;
-import io.lin.auth.feature.firebaseapp.dto.AppLoginRequest;
 import io.lin.auth.feature.firebaseapp.dto.AppLoginResponse;
 import io.lin.auth.feature.firebaseapp.dto.AppRegisterRequest;
-import io.lin.auth.feature.firebaseapp.enums.AppLoginStatus;
+import io.lin.auth.feature.firebaseapp.dto.AppSocialProfile;
+import io.lin.auth.feature.firebaseapp.dto.VerifiedFirebaseIdentity;
+import io.lin.auth.feature.login.jwt.JwtProperties;
+import io.lin.auth.feature.login.jwt.aUserDetails.CustomUserDetails;
+import io.lin.auth.feature.login.jwt.bToken.TokenProvider;
 import io.lin.auth.storage.R2Storage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Service
@@ -26,114 +30,106 @@ public class FirebaseAppService {
 
     private final AuthRepo authRepo;
     private final PasswordEncoder encoder;
-    private final EmailVerificationService emailVerificationService;
     private final R2Storage r2Storage;
+    private final JwtProperties jwtProperties;
 
     @Transactional
-    public AppLoginResponse appLogin(AppLoginRequest request) {
-        Auth userLogin = authRepo.findByUid(request.uid()).orElse(null);
+    public AppLoginResponse appLogin(VerifiedFirebaseIdentity identity) {
+        Auth userLogin = authRepo.findByUid(identity.uid()).orElse(null);
         if (userLogin != null) {
-            String avatar = userLogin.getAvatar() != null ?
-                    r2Storage.publicUrl(userLogin.getAvatar()) : null;
-
-            return new AppLoginResponse(
-                    UserInfo.fromEntity(userLogin, avatar),
-                    AppLoginStatus.LOGIN_SUCCESS
-            );
+            return loginSuccess(userLogin);
         }
 
-        if (!(request.email().isBlank() && request.email().isEmpty())) {
-            Auth user = authRepo.findByEmail(request.email()).orElse(null);
-            if (user != null) {
-                return new AppLoginResponse(
-                        UserInfo.fromEntity(user, null),
-                        AppLoginStatus.EMAIL_EXIST
-                );
-            }
+        Auth userByEmail = authRepo.findByEmail(identity.email()).orElse(null);
+        if (userByEmail != null) {
+            return linkFirebaseUidAndLogin(userByEmail, identity);
         }
 
-        return new AppLoginResponse(
-                null,
-                AppLoginStatus.NEED_REGISTER
-        );
+        return AppLoginResponse.needRegister(AppSocialProfile.fromIdentity(identity));
     }
 
-    @Transactional
-    public AppLoginResponse confirmUser(AppConfirmRequest request) {
-        Auth linked = authRepo.findByUid(request.uid()).orElse(null);
-        if (linked != null) {
-            String avatar = linked.getAvatar() != null ?
-                    r2Storage.publicUrl(linked.getAvatar()) : null;
+    private AppLoginResponse linkFirebaseUidAndLogin(Auth user, VerifiedFirebaseIdentity identity) {
+        requireVerifiedSocialEmail(identity);
 
-            return new AppLoginResponse(
-                    UserInfo.fromEntity(linked, avatar),
-                    AppLoginStatus.LOGIN_SUCCESS
-            );
-        }
-
-        Auth userByEmail = authRepo.findByEmail(request.email()).orElseThrow(
-                () -> new CustomException(HttpStatus.NOT_FOUND, "error.auth.email_not_found")
-        );
-
-        if (!Objects.equals(userByEmail.getUsername(), request.username())
-                || !encoder.matches(request.password(), userByEmail.getPassword())) {
-            throw new CustomException(HttpStatus.UNAUTHORIZED, "error.auth.invalid_credentials");
-        }
-
-        if (userByEmail.getUid() != null && !userByEmail.getUid().isBlank()) {
-            if (!Objects.equals(userByEmail.getUid(), request.uid())) {
+        String existingUid = user.getUid();
+        if (existingUid != null && !existingUid.isBlank()) {
+            if (!Objects.equals(existingUid, identity.uid())) {
                 throw new CustomException(HttpStatus.CONFLICT, "error.auth.firebase_already_linked");
             }
-        } else {
-            userByEmail.setUid(request.uid());
-            authRepo.save(userByEmail);
+            return loginSuccess(user);
         }
 
-        String avatar = userByEmail.getAvatar() != null ?
-                r2Storage.publicUrl(userByEmail.getAvatar()) : null;
-
-        return new AppLoginResponse(
-                UserInfo.fromEntity(userByEmail, avatar),
-                AppLoginStatus.LOGIN_SUCCESS
-        );
+        user.setUid(identity.uid());
+        authRepo.save(user);
+        return loginSuccess(user);
     }
 
     @Transactional
-    public AppLoginResponse newAccount(AppRegisterRequest request) {
-        if (authRepo.existsByUid(request.uid()))
-            throw new CustomException(HttpStatus.CONFLICT, "error.auth.account_already_registered");
-        if (authRepo.existsByUsername(request.username()))
-            throw new CustomException(HttpStatus.CONFLICT, "error.auth.username_conflict");
-        if (authRepo.existsByEmail(request.email()))
-            throw new CustomException(HttpStatus.CONFLICT, "error.auth.email_conflict");
-        if (!Objects.equals(request.password(), request.cfPassword()))
-            throw new CustomException(HttpStatus.CONFLICT, "error.auth.password.mismatch");
+    public AppLoginResponse newAccount(VerifiedFirebaseIdentity identity, AppRegisterRequest request) {
+        requireVerifiedSocialEmail(identity);
 
-        EmailVerification verification = emailVerificationService.requireVerified(request.email());
+        if (authRepo.existsByUid(identity.uid())) {
+            throw new CustomException(HttpStatus.CONFLICT, "error.auth.account_already_registered");
+        }
+        if (authRepo.existsByUsername(request.username())) {
+            throw new CustomException(HttpStatus.CONFLICT, "error.auth.username_conflict");
+        }
+        if (authRepo.existsByEmail(identity.email())) {
+            throw new CustomException(HttpStatus.CONFLICT, "error.auth.email_conflict");
+        }
+        if (!Objects.equals(request.password(), request.cfPassword())) {
+            throw new CustomException(HttpStatus.CONFLICT, "error.auth.password.mismatch");
+        }
+
+        String displayName = StringUtils.hasText(request.displayName())
+                ? request.displayName().trim()
+                : identity.displayName();
 
         Auth user = Auth.builder()
                 .username(request.username())
-                .displayName(request.displayName())
+                .displayName(displayName)
                 .password(encoder.encode(request.password()))
-                .email(request.email())
+                .email(identity.email())
                 .phone(request.phone())
-                .uid(request.uid())
-                .avatar("profiles/linlanga_logo.png")
+                .uid(identity.uid())
+//                .avatar("profiles/linlanga_logo.png")
                 .build();
 
         authRepo.save(user);
         user.ensureSelfCreatedBy();
         authRepo.save(user);
 
-        emailVerificationService.delete(verification);
-        return new AppLoginResponse(
-                UserInfo.fromEntity(user, null),
-                AppLoginStatus.LOGIN_SUCCESS
+        return loginSuccess(user);
+    }
+
+    private void requireVerifiedSocialEmail(VerifiedFirebaseIdentity identity) {
+        if (!identity.emailVerified()) {
+            throw new CustomException(HttpStatus.BAD_REQUEST, "error.auth.email.not_verified");
+        }
+    }
+
+    private AppLoginResponse loginSuccess(Auth user) {
+        user.setLastLogin(LocalDateTime.now());
+        authRepo.save(user);
+
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+
+        String accessToken = TokenProvider.createToken(authentication, jwtProperties);
+        String refreshToken = TokenProvider.createRefreshToken(authentication, jwtProperties);
+
+        return AppLoginResponse.success(
+                UserInfo.fromEntity(user, resolveAvatar(user)),
+                accessToken,
+                refreshToken
         );
     }
 
-    @Transactional
-    public void verifyEmail(String email) {
-        emailVerificationService.markVerifiedForSocialLogin(email);
+    private String resolveAvatar(Auth user) {
+        return user.getAvatar() != null ? r2Storage.publicUrl(user.getAvatar()) : null;
     }
 }

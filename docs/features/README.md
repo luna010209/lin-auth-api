@@ -8,6 +8,7 @@ Base URL (local): `http://localhost:8081`
 | Sign up | [signup.md](./signup.md) | `/auth/sign-up` |
 | Login | [login.md](./login.md) | `/auth/login`, `/auth/find-*` |
 | Firebase app | [firebase-app.md](./firebase-app.md) | `/auth/app` |
+| Google login | [google-login.md](google-login.md) | Firebase / Google Cloud |
 | Profile | [profile.md](./profile.md) | `/auth` (authenticated) |
 | Admin user stats | [admin-users.md](./admin-users.md) | `/auth/admin/users` |
 | Shared types | [account.md](./account.md) | — |

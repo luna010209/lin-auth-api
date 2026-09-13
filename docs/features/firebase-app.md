@@ -1,15 +1,45 @@
 # Firebase app
 
-Flutter/mobile flows after Firebase Authentication (Google, etc.). Links Firebase UID to Lin accounts.
+Google / Firebase sign-in from the Flutter app (or any client). Links Firebase UID to Lin accounts.
 
 **Package:** `io.lin.auth.feature.firebaseapp`  
-**Auth:** Public (no JWT)
+**Auth:** Public endpoints, but every request requires a **verified Firebase ID token** in the `Authorization` header.
+
+---
+
+## Client flow (Google → Firebase → LinAuth)
+
+```text
+1. Client: Firebase Auth signInWithGoogle()
+2. Client: idToken = await user.getIdToken()
+3. Client: POST /auth/app
+           Authorization: Bearer {idToken}
+4. Handle status:
+     LOGIN_SUCCESS  → use user + JWT (or same idToken for API calls)
+     NEED_REGISTER  → POST /auth/app/register (no email_verification table)
+```
+
+When email already exists in LinAuth but `firebase_uid` is empty, `POST /auth/app` **auto-links** the UID and returns `LOGIN_SUCCESS` (no password proof required).
+
+`uid` and `email` always come from the **verified token** on the server — do not send them in the body.
+
+---
+
+## Shared header
+
+All `/auth/app/*` endpoints:
+
+```http
+Authorization: Bearer {firebaseIdToken}
+```
+
+Get `firebaseIdToken` from Firebase Auth after Google sign-in (`user.getIdToken()` in Flutter).
 
 ---
 
 ## Shared response type — `AppLoginResponse`
 
-Used by `POST /auth/app`, `/confirm`, and `/register`.
+Used by `POST /auth/app` and `/register`.
 
 ```json
 {
@@ -25,129 +55,86 @@ Used by `POST /auth/app`, `/confirm`, and `/register`.
     "createdAt": "2026-09-12T10:00:00",
     "roles": []
   },
-  "status": "LOGIN_SUCCESS"
+  "status": "LOGIN_SUCCESS",
+  "profile": null,
+  "accessToken": "...",
+  "refreshToken": "..."
+}
+```
+
+When `status` is `NEED_REGISTER`, `user` is `null` and `profile` is pre-filled from the Google/Firebase token:
+
+```json
+{
+  "user": null,
+  "status": "NEED_REGISTER",
+  "profile": {
+    "uid": "firebase-uid-abc",
+    "email": "user@gmail.com",
+    "displayName": "Luna Kim",
+    "picture": "https://lh3.googleusercontent.com/..."
+  }
 }
 ```
 
 | Field | Type | Notes |
 |-------|------|-------|
 | `user` | [UserInfo](./account.md#userinfo) \| null | `null` when `status` is `NEED_REGISTER` |
-| `status` | enum | `LOGIN_SUCCESS`, `EMAIL_EXIST`, `NEED_REGISTER` |
+| `status` | enum | `LOGIN_SUCCESS`, `NEED_REGISTER` |
+| `profile` | object \| null | Pre-filled Google data when `NEED_REGISTER`; use to populate the registration form |
 
 ### `AppLoginStatus`
 
 | Value | Meaning | Next step |
 |-------|---------|-----------|
-| `LOGIN_SUCCESS` | User found / linked / registered | Use `user` in app |
-| `EMAIL_EXIST` | Firebase UID new, but email matches existing web account | Call `/auth/app/confirm` |
-| `NEED_REGISTER` | No UID and no email match | Call `/auth/app/register` (after email verified) |
+| `LOGIN_SUCCESS` | User found, auto-linked, or registered | Use JWT + `user` in app |
+| `NEED_REGISTER` | No UID and no email match | Show registration form (pre-fill from `profile`), then `POST /auth/app/register` |
 
 ---
 
 ## POST `/auth/app`
 
-Check login status after Firebase sign-in.
+Check login status after Firebase Google sign-in.
 
 ### Request
 
-**Content-Type:** `application/json`
-
-```json
-{
-  "uid": "firebase-uid-abc",
-  "email": "user@example.com"
-}
+```http
+POST /auth/app
+Authorization: Bearer {firebaseIdToken}
 ```
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `uid` | string | Yes | Firebase UID |
-| `email` | string | No | Used when UID not yet linked |
+No request body.
+
+### Server logic
+
+1. `firebase_uid` found → `LOGIN_SUCCESS`
+2. Email found, `firebase_uid` empty → set uid from token → `LOGIN_SUCCESS`
+3. Email found, different `firebase_uid` → `409 error.auth.firebase_already_linked`
+4. No match → `NEED_REGISTER` with `profile`
 
 ### Response
 
 **200 OK** — `AppLoginResponse` (see above)
 
-Examples:
-
-**UID already linked:**
-
-```json
-{
-  "user": { "...": "..." },
-  "status": "LOGIN_SUCCESS"
-}
-```
-
-**Email exists, UID new:**
-
-```json
-{
-  "user": { "...": "..." },
-  "status": "EMAIL_EXIST"
-}
-```
-
-**New user:**
-
-```json
-{
-  "user": null,
-  "status": "NEED_REGISTER"
-}
-```
-
----
-
-## POST `/auth/app/confirm`
-
-Link Firebase UID to an existing web account (username + password proof).
-
-### Request
-
-```json
-{
-  "uid": "firebase-uid-abc",
-  "email": "user@example.com",
-  "username": "luna",
-  "password": "Secret123!"
-}
-```
-
-| Field | Type | Required |
-|-------|------|----------|
-| `uid` | string | Yes |
-| `email` | string | Yes |
-| `username` | string | Yes |
-| `password` | string | Yes |
-
-### Response
-
-**200 OK** — `AppLoginResponse` with `status: "LOGIN_SUCCESS"`
-
-### Errors
-
-| HTTP | Code | When |
-|------|------|------|
-| 404 | `error.auth.email_not_found` | Email not found |
-| 401 | `error.auth.invalid_credentials` | Username/password mismatch |
-| 409 | `error.auth.firebase_already_linked` | Account linked to different UID |
-
 ---
 
 ## POST `/auth/app/register`
 
-Create account with Firebase UID (requires verified email).
+Create account with Firebase UID (requires verified email on token).
 
 ### Request
 
+```http
+POST /auth/app/register
+Authorization: Bearer {firebaseIdToken}
+Content-Type: application/json
+```
+
 ```json
 {
-  "uid": "firebase-uid-abc",
   "username": "luna",
   "password": "Secret123!",
   "cfPassword": "Secret123!",
-  "email": "user@example.com",
   "displayName": "Luna",
   "phone": "01012345678"
 }
@@ -155,13 +142,15 @@ Create account with Firebase UID (requires verified email).
 
 | Field | Type | Required |
 |-------|------|----------|
-| `uid` | string | Yes |
 | `username` | string | Yes |
 | `password` | string | Yes |
 | `cfPassword` | string | Yes |
-| `email` | string | Yes |
-| `displayName` | string | No |
+| `displayName` | string | No (falls back to Google name from token) |
 | `phone` | string | No |
+
+`email` and `firebase_uid` come from the Firebase ID token.
+
+Google registration trusts `email_verified=true` on the Firebase token. Does **not** use the `email_verification` table.
 
 ### Response
 
@@ -177,39 +166,25 @@ Default avatar key: `profiles/linlanga_logo.png`
 | 409 | `error.auth.username_conflict` | Username taken |
 | 409 | `error.auth.email_conflict` | Email taken |
 | 409 | `error.auth.password.mismatch` | Passwords differ |
-| 400 | `error.auth.email.not_verified` | Email not verified |
-
----
-
-## POST `/auth/app/verify-email`
-
-Mark email as verified for social login (skip code flow when email comes from Google, etc.).
-
-### Request
-
-| Type | Name | Required |
-|------|------|----------|
-| Query | `email` | Yes |
-
-```http
-POST /auth/app/verify-email?email=user@example.com
-```
-
-### Response
-
-**200 OK** — empty body
-
-Creates or updates `email_verification` with `verified=true`.
+| 400 | `error.auth.email.not_verified` | Token email not verified (non-Google providers) |
 
 ---
 
 ## Typical app flow
 
 ```text
-Firebase sign-in
-  → POST /auth/app { uid, email }
-      LOGIN_SUCCESS     → done
-      EMAIL_EXIST       → POST /auth/app/confirm
-      NEED_REGISTER     → POST /auth/app/verify-email?email=... (social)
-                         → POST /auth/app/register
+Firebase Google sign-in → getIdToken()
+  → POST /auth/app
+      LOGIN_SUCCESS     → done (JWT returned)
+      NEED_REGISTER     → show form (pre-fill from profile.email, profile.displayName)
+                         → POST /auth/app/register { username, password, ... }
+```
+
+---
+
+## Example — check login
+
+```bash
+curl -X POST http://localhost:8081/auth/app \
+  -H "Authorization: Bearer FIREBASE_ID_TOKEN"
 ```

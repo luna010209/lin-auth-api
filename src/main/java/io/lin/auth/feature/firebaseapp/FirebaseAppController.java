@@ -1,18 +1,21 @@
 package io.lin.auth.feature.firebaseapp;
 
+import com.google.common.net.HttpHeaders;
 import io.lin.auth.common.dto.ApiResponse;
-import io.lin.auth.feature.firebaseapp.dto.AppConfirmRequest;
-import io.lin.auth.feature.firebaseapp.dto.AppLoginRequest;
+import io.lin.auth.config.firebase.FirebaseTokenVerifier;
 import io.lin.auth.feature.firebaseapp.dto.AppLoginResponse;
 import io.lin.auth.feature.firebaseapp.dto.AppRegisterRequest;
+import io.lin.auth.feature.firebaseapp.dto.VerifiedFirebaseIdentity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,107 +24,53 @@ import org.springframework.web.bind.annotation.*;
 public class FirebaseAppController {
 
     private final FirebaseAppService firebaseAppService;
+    private final FirebaseTokenVerifier firebaseTokenVerifier;
 
     @PostMapping
     @Operation(
-            summary = "Check app login status (based on Firebase UID)",
+            summary = "Check app login status after Firebase Google sign-in",
             description = """
-                        Determines the login status based on the server database after Firebase login (e.g., Google) is completed in the Flutter app.
+                        Call after the client completes Google sign-in with Firebase Auth.
+                    
+                        Headers:
+                        - Authorization: Bearer {firebaseIdToken}
                     
                         Process:
-                        1) Retrieve user by firebaseUid
-                           - If exists: LOGIN_SUCCESS (login immediately)
-                        2) If firebaseUid does not exist, check existing account by email
-                           - If exists: EMAIL_EXIST → proceed to account linking confirmation step
-                        3) If email also does not exist
-                           - NEED_REGISTER → redirect to the registration screen
-                    
-                        Note:
-                        - This API does NOT perform password verification. (Account linking is handled in /confirm)
-                        - It is recommended to replace client-provided uid/email with Firebase ID Token verification in the future.
+                        1) Verify Firebase ID token server-side (uid + email come from token)
+                        2) If firebase_uid exists in DB → LOGIN_SUCCESS
+                        3) Else if email exists → auto-link firebase_uid and LOGIN_SUCCESS
+                        4) Else → NEED_REGISTER with profile (email, displayName, uid, picture) for the registration form
                     """
     )
     public ResponseEntity<ApiResponse<AppLoginResponse>> appLogin(
-            @Valid @RequestBody AppLoginRequest request
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(firebaseAppService.appLogin(request)));
-    }
-
-    @PostMapping("confirm")
-    @Operation(
-            summary = "Verify existing web account and link Firebase UID",
-            description = """
-                        After Firebase login, links an existing web account (with the same email or phone number)
-                        to the Firebase UID after verifying the user's identity (username/password).
-                    
-                        Usage scenario:
-                        - Called when /app-login returns EMAIL_EXIST (or PHONE_EXIST)
-                    
-                        Process:
-                        1) Verify the existing account using username/password
-                        2) If verification succeeds, update the account’s firebaseUid with the provided UID
-                        3) After linking, the user can log in directly using firebaseUid
-                    """
-    )
-    public ResponseEntity<ApiResponse<AppLoginResponse>> confirmUser(
-            @Valid @RequestBody AppConfirmRequest request
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(firebaseAppService.confirmUser(request)));
+        VerifiedFirebaseIdentity identity = firebaseTokenVerifier.verifyIdentity(authorization);
+        return ResponseEntity.ok(ApiResponse.ok(firebaseAppService.appLogin(identity)));
     }
 
     @PostMapping("register")
     @Operation(
-            summary = "App registration (create account based on Firebase UID)",
+            summary = "Register a new account from Firebase Google sign-in",
             description = """
-                        Registers a new user when no account exists in the database after Firebase login.
-                        The Firebase UID is stored during registration, allowing simplified login via UID in the app.
+                        Used when POST /auth/app returns NEED_REGISTER.
                     
-                        Usage scenario:
-                        - Called when /app-login returns NEED_REGISTER
+                        Headers:
+                        - Authorization: Bearer {firebaseIdToken}
                     
-                        Process:
-                        1) Validate username (uniqueness and format)
-                        2) Verify that password and confirmPassword match
-                        3) Check for duplicate email (or phone)
-                        4) Create a new account and store the firebaseUid
+                        Body:
+                        - username, password, cfPassword
+                        - displayName, phone (optional; displayName falls back to Google name)
                     
-                        Note:
-                        - Depending on policy, you may either reuse the web email verification flow (require verification),
-                          or treat emails from Google login as already verified.
+                        Email and firebase_uid come from the verified ID token.
+                        Google email_verified=true is trusted — no email_verification table required.
                     """
     )
     public ResponseEntity<ApiResponse<AppLoginResponse>> register(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @Valid @RequestBody AppRegisterRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(firebaseAppService.newAccount(request)));
-    }
-
-    @PostMapping("verify-email")
-    @Operation(
-            summary = "Verify email for social login registration",
-            description = """
-                        Marks the email received after a successful social login (e.g., Google) as verified for registration.
-                    
-                        Process:
-                        - Normalize the email by trimming and converting it to lowercase
-                        - Store the email as verified (verified=true)
-                    
-                        Usage scenario:
-                        - User successfully logs in via Google or other social providers in the app
-                        - The email is reliably provided by the social account
-                        - Allows registration to proceed without entering an email verification code
-                    
-                        Note:
-                        - This API is intended for use when a trusted email is obtained from social login.
-                        - It can replace the standard email verification code process for regular email registration.
-                    """
-    )
-    public ResponseEntity<ApiResponse<Void>> verifyEmail(
-            @NotBlank(message = "valid.email")
-            @Email(message = "valid.email_format")
-            @RequestParam("email") String email
-    ) {
-        firebaseAppService.verifyEmail(email);
-        return ResponseEntity.ok(ApiResponse.okVoid());
+        VerifiedFirebaseIdentity identity = firebaseTokenVerifier.verifyIdentity(authorization);
+        return ResponseEntity.ok(ApiResponse.ok(firebaseAppService.newAccount(identity, request)));
     }
 }
